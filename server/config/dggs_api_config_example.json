@@ -1,0 +1,51 @@
+{
+  "collections": {
+    "1": {
+      "aet_trend_duckdb": {
+        "title": "AET Trend over Baltics (DuckDB Optimized)",
+        "description": "High performance AET trend data retrieval using native DuckDB processing.",
+        "extent": {
+          "spatial": {
+            "bbox": [
+              [20.0, 53.0, 30.0, 60.0]
+            ]
+          }
+        },
+        "collection_provider": {
+          "providerId": "duckdb_parquet",
+          "dggrsId": "igeo7",
+          "min_refinement_level": 3,
+          "max_refinement_level": 9,
+          "datasource_id": "aet_trend_local"
+        }
+      }
+    }
+  },
+  "dggrs": {
+    "1": {
+      "igeo7": {
+        "title": "IGEO7 DGGRS with z7string",
+        "description": "Novel pure aperture 7 hexagonal DGGS",
+        "crs": "wgs84",
+        "shapeType": "hexagon",
+        "definition_link": "https://agile-giss.copernicus.org/articles/6/32/2025/",
+        "defaultDepth": 1,
+        "classname": "igeo7_dggrs_provider.IGEO7Provider"
+      }
+    }
+  },
+  "collection_providers": {
+    "1": {
+      "duckdb_parquet": {
+        "classname": "duckdb_collection_provider.DuckDBCollectionProvider",
+        "datasources": {
+          "aet_trend_local": {
+            "source": "server/data/aet_trend__igeo7__3-9.parquet",
+            "is_file": true,
+            "id_col": "cell_id"
+          }
+        }
+      }
+    }
+  }
+}

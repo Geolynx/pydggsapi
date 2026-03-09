@@ -1,0 +1,40 @@
+# The Caddyfile is an easy way to configure your Caddy web server.
+#
+# Unless the file starts with a global options block, the first
+# uncommented line is always the address of your site.
+#
+# To use your own domain name (with automatic HTTPS), first make
+# sure your domain's A/AAAA DNS records are properly pointed to
+# this machine's public IP, then replace ":80" below with your
+# domain name.
+
+# Refer to the Caddy docs for more information:
+# https://caddyserver.com/docs/caddyfile
+
+# Primary domain configuration
+portal.geolynx.ee {
+    # Enable automatic HTTPS
+
+# FastAPI routes - these need to come first for proper matching
+    handle /dggs-api/v1-pre* {
+        reverse_proxy localhost:8000 
+    }
+                      
+    handle /tiles-api* {
+        reverse_proxy localhost:8000
+    }
+
+}
+
+# Catch-all rule for other domains
+
+:80 {
+    # This will match any domain not matched by previous blocks
+
+	# Set this path to your site's directory.
+	root * /usr/share/caddy
+
+	# Enable the static file server.
+	file_server
+
+}

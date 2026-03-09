@@ -88,9 +88,71 @@ The ``pixi.lock`` file ensures that all developers and production servers use id
    # Add a new pypi dependency to the core
    pixi add --pypi my-package
 
+Production Deployment
+---------------------
+
+For a robust production deployment on a small Linux server, it is recommended to use **systemd** for process management and **Caddy** as a reverse proxy.
+
+Environment Variables (``.env``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Create a ``.env`` file in the project root or specify it in the systemd unit. 
+
+.. code-block:: bash
+
+   # Example .env
+   # DGGRID_PATH is automatically handled by Pixi if using the 'full' or 'dggrid' feature.
+   # For 'lean' environment, you may need to point to an external binary.
+   dggs_api_config=/opt/pydggsapi/server/config/dggs_api_config.json
+   CORS='["*"]'
+   DGGS_PREFIX=/dggs-api/v1-pre
+   OPENAPI_URL=/dggs-api/v1-pre/openapi.json
+   DOCS_URL=/dggs-api/v1-pre/docs
+
+Systemd Service
+^^^^^^^^^^^^^^^
+
+Using Pixi in systemd ensures that the environment is correctly activated before the server starts.
+
+.. code-block:: ini
+
+   [Unit]
+   Description=PyDGGS API Service
+   After=network.target
+
+   [Service]
+   Type=simple
+   User=pydggsapi
+   Group=pydggsapi
+   WorkingDirectory=/opt/pydggsapi
+   # Use 'lean' environment for production to minimize footprint
+   ExecStart=/usr/local/bin/pixi run --frozen -e lean start
+   Restart=always
+   RestartSec=5
+
+   [Install]
+   WantedBy=multi-user.target
+
+Reverse Proxy (Caddy)
+^^^^^^^^^^^^^^^^^^^^^
+
+Caddy simplifies HTTPS management. Ensure both the DGGS API and Tiles API routes are proxied.
+
+.. code-block:: caddy
+
+   portal.example.com {
+       handle /dggs-api/v1-pre* {
+           reverse_proxy localhost:8000
+       }
+                         
+       handle /tiles-api* {
+           reverse_proxy localhost:8000
+       }
+   }
+
 Orchestration Optimizations
 ---------------------------
-
+...
 The internal data retrieval logic in ``pydggsapi.models.ogc_dggs.data_retrieval`` has been optimized:
 * **Vectorized Aggregation:** The expensive ``scipy.stats.mode`` aggregation has been replaced with a high-performance NumPy-based implementation.
 * **Defensive Imports:** Optional libraries are now imported locally within specific code paths. This prevents the server from crashing if heavy dependencies like ``xarray`` or ``scipy`` are not installed.

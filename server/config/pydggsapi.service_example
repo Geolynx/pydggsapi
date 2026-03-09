@@ -1,0 +1,36 @@
+[Unit]
+Description=PyDGGS API FastAPI Application (Pixi)
+After=network.target
+
+[Service]
+Type=simple
+User=appserv
+Group=appserv
+WorkingDirectory=/home/appserv/run/pydggsapi
+
+# Load environment variables from file
+EnvironmentFile=/home/appserv/run/pydggsapi/server/config/pydggsapi.env
+
+# Start command using pixi to manage the environment
+# --frozen ensures we use the exact lockfile versions
+# -e lean uses the minimal production environment
+ExecStart=/usr/local/bin/pixi run --frozen -e lean start \
+    --host ${PYDGDSAPI_HOST:-0.0.0.0} \
+    --port ${PYDGDSAPI_PORT:-8000} \
+    --workers ${PYDGDSAPI_WORKERS:-2} \
+    --log-level ${PYDGDSAPI_LOG_LEVEL:-info}
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Resource limits
+LimitNOFILE=65536
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pydggsapi
+
+[Install]
+WantedBy=multi-user.target

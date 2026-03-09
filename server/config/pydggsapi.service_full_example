@@ -1,0 +1,47 @@
+[Unit]
+# this is a very complete draft of a systemd service for pydggsapi
+Description=PyDGGS API FastAPI Application
+After=network.target
+
+[Service]
+Type=simple
+User=appserv
+Group=appserv
+WorkingDirectory=/home/appserv/run/pydggsapi
+
+# Environment variables (adjust as needed)
+Environment="PYDGGDSAPI_HOST=127.0.0.1"
+Environment="PYDGGDSAPI_PORT=8000"
+Environment="PYDGGDSAPI_WORKERS=8"
+Environment="PYDGGDSAPI_LOG_LEVEL=info"
+Environment="DGGS_PREFIX=/dggs-api/v1-pre"
+Environment="OPENAPI_URL=/dggs-api/v1-pre/openapi.json"
+Environment="DOCS_URL=/dggs-api/v1-pre/docs"
+Environment="DGGRID_PATH=/home/appserv/.local/bin/dggrid"
+Environment="dggs_api_config=/home/appserv/run/pydggsapi/config/dggs_api_config_example.json"
+
+# Path to the Poetry virtual environment -> needs to be changed for a pixi-based install
+Environment="PATH=/home/appserv/.cache/pypoetry/virtualenvs/pydggsapi-uq98oSsH-py3.10/bin:/usr/local/bin:/usr/bin:/bin:/home/appserv/.local/bin"
+
+# Start command using uvicorn from the Poetry virtualenv
+ExecStart=/home/appserv/.cache/pypoetry/virtualenvs/pydggsapi-uq98oSsH-py3.10/bin/uvicorn pydggsapi.api:app \
+    --host ${PYDGGDSAPI_HOST} \
+    --port ${PYDGGDSAPI_PORT} \
+    --workers ${PYDGGDSAPI_WORKERS} \
+    --log-level ${PYDGGDSAPI_LOG_LEVEL}
+
+# Restart policy
+# Restart=always
+# RestartSec=10
+
+# Resource limits (optional, adjust as needed)
+LimitNOFILE=65536
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pydggsapi
+
+[Install]
+WantedBy=multi-user.target
+
