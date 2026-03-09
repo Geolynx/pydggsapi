@@ -29,6 +29,7 @@ OGC API - DGGS specifies an API for accessing data organised according to a Disc
    
 
    introduction
+   perf_wip
    Configuration <tinydb_configuration/index>
    providers/index
    pydggsapi demo notebook <example_notebook/pydggsapi_demo_notebook.ipynb>
