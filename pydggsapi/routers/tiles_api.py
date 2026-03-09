@@ -25,13 +25,23 @@ import pandas as pd
 import geopandas as gpd
 import mapbox_vector_tile
 import logging
-# logging.basicConfig(format='%(asctime)s.%(msecs)03d %(levelname)s {%(module)s} [%(funcName)s] %(message)s',
-#                    datefmt='%Y-%m-%d,%H:%M:%S', level=logging.INFO)
+from functools import lru_cache
+from shapely.geometry.polygon import orient
+
+# ... rest of imports ...
+
 logger = logging.getLogger()
 nest_asyncio.apply()
 
 router = APIRouter()
 
+# Cache the dggrid cell listing because it is extremely slow (CLI subprocess)
+# and the grid is static for a given bbox/level.
+@lru_cache(maxsize=1024)
+def _cached_zoneslist(dggrs_id, clip_bound_wkt, zone_level):
+    dggrs_provider = _get_dggrs_provider(dggrs_id)
+    clip_bound = shapely.from_wkt(clip_bound_wkt)
+    return dggrs_provider.zoneslist(clip_bound, zone_level, parent_zone=None, returngeometry='zone-region', compact=False)
 
 SRID_LNGLAT = 4326
 SRID_SPHERICAL_MERCATOR = 3857
@@ -76,8 +86,13 @@ async def query_mvt_tiles(
                                             default_options={"transformer": transformer.transform})
         return Response(bytes(content), media_type="application/x-protobuf")
     logger.debug(f'{__name__} zone level:{zone_level}, tile width:{tile_width_km}, bbox:{bbox}')
-    zoneslist = dggrs_provider.zoneslist(clip_bound, zone_level, parent_zone=None, returngeometry='zone-region', compact=False)
-    geometry = [shapely.from_geojson(json.dumps(g.__dict__)) for g in zoneslist.geometry]
+    
+    # Use cached version of the expensive dggrid call
+    zoneslist = _cached_zoneslist(tilesreq.dggrsId, clip_bound.wkt, zone_level)
+    
+    # Correct the geometry winding order for MVT compliance (QGIS requirement)
+    geometry = [orient(shapely.from_geojson(json.dumps(g.__dict__)), sign=-1.0) for g in zoneslist.geometry]
+    
     if (collection.collection_provider.dggrs_zoneid_repr != "textual"):
         zoneslist.zones = dggrs_provider.zone_id_from_textual(zoneslist.zones, collection.collection_provider.dggrs_zoneid_repr)
     zoneslist = gpd.GeoDataFrame({'zone_id': zoneslist.zones}, geometry=geometry).set_index('zone_id')

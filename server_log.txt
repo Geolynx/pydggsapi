@@ -1,0 +1,6 @@
+/Users/akmoch/dev/build/geolynx/esg_services/reference/pydggsapi_geolynx_fork/pydggsapi/schemas/ogc_dggs/dggrs_zones_data.py:129: UserWarning: Field name "schema" in "ZonesDataDggsJsonResponse" shadows an attribute in parent "CommonBaseModel"
+  class ZonesDataDggsJsonResponse(CommonBaseModel):
+INFO:     Started server process [52495]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)

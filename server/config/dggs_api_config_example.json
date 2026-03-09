@@ -40,7 +40,7 @@
         "classname": "duckdb_collection_provider.DuckDBCollectionProvider",
         "datasources": {
           "aet_trend_local": {
-            "source": "server/data/aet_trend__igeo7__9.parquet",
+            "source": "server/data/aet_trend__igeo7__3-9.parquet",
             "is_file": true,
             "id_col": "cell_id"
           }
