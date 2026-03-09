@@ -4,24 +4,37 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
 from dotenv import load_dotenv
-
-import pydggsapi.request_example as request_example
-from pydggsapi.routers import dggs_api
-from pydggsapi.routers import tiles_api
-
 import os
 import json
 import logging
 import importlib.metadata
 
-version = importlib.metadata.version('pydggsapi')
+load_dotenv(os.getenv("PYDGGSAPI_ENV", ".env"))
+
+try:
+    version = importlib.metadata.version('pydggsapi')
+except importlib.metadata.PackageNotFoundError:
+    version = "0.1.5-dev"
 
 logger = logging.getLogger()
-load_dotenv()
 logger.debug("Environment configuration:\n%s", json.dumps(dict(os.environ), indent=2))
+
+import pydggsapi.request_example as request_example
+from pydggsapi.routers import dggs_api
+from pydggsapi.routers import tiles_api
+
 api_title = os.environ.get('API_TITLE', 'University of Tartu, OGC DGGS API v1-pre')
 api_description = os.environ.get('API_DESCRIPTION', 'OGC DGGS API')
-api_contact = json.loads(os.environ.get('API_CONTACT') or '{}') or {
+
+raw_contact = os.environ.get('API_CONTACT')
+api_contact = {}
+if raw_contact:
+    try:
+        api_contact = json.loads(raw_contact)
+    except json.JSONDecodeError:
+        api_contact = {"name": "API Contact", "email": raw_contact}
+
+api_contact = api_contact or {
     "name": "Contact project lead",
     "url": "https://landscape-geoinformatics.ut.ee/expertise/dggs/",
     "email": "alexander.kmoch@ut.ee"
