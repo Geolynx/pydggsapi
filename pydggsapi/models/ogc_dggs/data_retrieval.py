@@ -16,17 +16,12 @@ from pydggsapi.dependencies.api.utils import getCQLAttributes
 
 from starlette.requests import Request
 from fastapi.responses import FileResponse, Response
-from numcodecs import Blosc
 from typing import Any, List, Dict, Optional, Union, cast
-from scipy.stats import mode
 from pygeofilter.ast import AstType
 from ordered_set import OrderedSet
-import ubjson
 import shapely
 import tempfile
 import numpy as np
-import zarr
-import xarray as xr
 import geopandas as gpd
 import pandas as pd
 import json
@@ -35,6 +30,16 @@ import logging
 
 logger = logging.getLogger()
 
+def _fast_mode(x):
+    """
+    A faster alternative to scipy.stats.mode for 1D arrays.
+    Returns the first most frequent element.
+    """
+    if len(x) == 0:
+        return np.nan
+    vals, counts = np.unique(x, return_counts=True)
+    index = np.argmax(counts)
+    return vals[index]
 
 def query_zone_data(
     request: Request,
@@ -174,7 +179,8 @@ def query_zone_data(
                         tmp_geo = master.groupby('vid')['geometry'].last()
                         master.drop(columns=['geometry'], inplace=True)
                     master.drop(columns=['zoneId'], inplace=True)
-                    master = master.groupby('vid').agg(lambda x: mode(x)[0])
+                    # Optimized aggregation using NumPy unique instead of scipy.stats.mode
+                    master = master.groupby('vid').agg(_fast_mode)
                     if (returngeometry is not None):
                         master = master.join(tmp_geo)
                     master = master.reset_index().rename(columns={'vid': 'zoneId'})
@@ -192,6 +198,9 @@ def query_zone_data(
     id_ = 0
     properties, values = {}, {}
     if (returntype == 'application/zarr+zip'):
+        import zarr
+        import xarray as xr
+        from numcodecs import Blosc
         tmpfile = tempfile.mkstemp()
         zipstore = zarr.ZipStore(tmpfile[1], mode='w')
         datatree = xr.DataTree()
@@ -270,6 +279,9 @@ def query_zone_data(
                         data=v[i, :].tolist(),
                     ))
     if (datatree is not None):
+        import zarr
+        import xarray as xr
+        from numcodecs import Blosc
         compressor = Blosc(cname='zstd', clevel=3, shuffle=Blosc.BITSHUFFLE)
         encode = {}
         for zone in datatree.groups:
@@ -303,6 +315,7 @@ def query_zone_data(
         return_['dimensions'] = zone_level_dims[deepest_zone_level]
     dggs_json = ZonesDataDggsJsonResponse(**return_)
     if (returntype == 'application/ubjson'):
+        import ubjson
         dggs_ubjson = ubjson.dumpb(dggs_json.model_dump(mode='json'), no_float32=False)
         return Response(dggs_ubjson, headers={
             'content-type': 'application/ubjson',
