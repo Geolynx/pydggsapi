@@ -57,9 +57,10 @@ httpx = ">=0.28.1"
 default = ["dev"]
 lean = []
 full = ["clickhouse", "dggrid", "dggal", "zarr", "scipy", "dev"]
+test-dggrid = ["dggrid", "scipy", "dev"]
 data-science = ["zarr", "scipy"]
 database = ["clickhouse"]
 
 [tasks]
-start = "python pydggsapi/main.py"
+start = "PYTHONPATH=. python pydggsapi/main.py"
 test = "pytest pydggsapi/test"
