@@ -36,6 +36,7 @@ dggrid = ">=8.4.1"
 
 [feature.dggrid.pypi-dependencies]
 dggrid4py = ">=0.5.3"
+requests = ">=2.25.1"
 
 [feature.dggal.pypi-dependencies]
 dggal = ">=0.0.5"
@@ -62,5 +63,5 @@ data-science = ["zarr", "scipy"]
 database = ["clickhouse"]
 
 [tasks]
-start = "PYTHONPATH=. python pydggsapi/main.py"
+start = "PYTHONPATH=. uvicorn pydggsapi.api:app --host 0.0.0.0 --port 8000"
 test = "pytest pydggsapi/test"

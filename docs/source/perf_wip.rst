@@ -96,18 +96,36 @@ For a robust production deployment on a small Linux server, it is recommended to
 Environment Variables (``.env``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Create a ``.env`` file in the project root or specify it in the systemd unit. 
+The server loads environment variables from a ``.env`` file by default. You can specify a custom path using the ``PYDGGSAPI_ENV`` variable.
+
+**Example and Working Settings:**
 
 .. code-block:: bash
 
-   # Example .env
-   # DGGRID_PATH is automatically handled by Pixi if using the 'full' or 'dggrid' feature.
-   # For 'lean' environment, you may need to point to an external binary.
-   dggs_api_config=/opt/pydggsapi/server/config/dggs_api_config.json
+   # Path to the TinyDB configuration file
+   dggs_api_config=server/config/dggs_api_config_example.json
+
+   # DGGRID binary path (automatically handled by Pixi in 'full' or 'dggrid' envs)
+   # For 'lean' production, point to your local binary:
+   # DGGRID_PATH=/usr/local/bin/dggrid
+
+   # API Metadata
+   API_TITLE="University of Tartu, OGC DGGS API v1-pre"
+   API_DESCRIPTION="OGC DGGS API"
+   API_CONTACT="info@geolynx.ee"
+
+   # OGC API & Router Settings
    CORS='["*"]'
    DGGS_PREFIX=/dggs-api/v1-pre
    OPENAPI_URL=/dggs-api/v1-pre/openapi.json
    DOCS_URL=/dggs-api/v1-pre/docs
+
+   # Server performance
+   PYDGDSAPI_WORKERS=1
+   LOGLEVEL=10  # DEBUG
+
+**Robust Metadata Parsing:**
+The ``API_CONTACT`` field now supports both plain email strings and JSON objects (e.g., ``{"name": "...", "email": "..."}``). If a plain string is provided, it is automatically converted to a standard contact object.
 
 Systemd Service
 ^^^^^^^^^^^^^^^
@@ -152,7 +170,10 @@ Caddy simplifies HTTPS management. Ensure both the DGGS API and Tiles API routes
 
 Orchestration Optimizations
 ---------------------------
-...
-The internal data retrieval logic in ``pydggsapi.models.ogc_dggs.data_retrieval`` has been optimized:
-* **Vectorized Aggregation:** The expensive ``scipy.stats.mode`` aggregation has been replaced with a high-performance NumPy-based implementation.
-* **Defensive Imports:** Optional libraries are now imported locally within specific code paths. This prevents the server from crashing if heavy dependencies like ``xarray`` or ``scipy`` are not installed.
+
+The internal orchestration logic has been hardened for development and production:
+
+* **Vectorized Aggregation:** The expensive ``scipy.stats.mode`` aggregation has been replaced with a high-performance NumPy-based implementation (``_fast_mode``).
+* **Defensive Imports:** Optional libraries (``scipy``, ``zarr``, ``xarray``) are now imported locally. This allows the server to run core providers even if heavy extras are missing.
+* **Resilient Metadata:** Version lookup and contact parsing are now defensive, allowing the server to start gracefully even if package metadata is missing or environment variables are simple strings.
+* **Deterministic Startup:** The initialization sequence ensures that environment variables are loaded via ``load_dotenv`` before any sub-routers (which might depend on them) are imported.
